@@ -1,13 +1,13 @@
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 #include "models.h"
-#include "rot.h"
-#include "errors.h"
 #include "clines.h"
+#include "errors.h"
 #include "load.h"
+#include "rot.h"
 
 #define PI 3.1415926535898
 
@@ -77,14 +77,9 @@ double distance(double xa, double ya, double za, double xb, double yb,
 |
 -----------------------------------------------------------------------*/
 int cmp(const void *a, const void *b) {
-  const T *x = a, *y = b;
-  if (*x > *y) {
-    return 1;
-  }
-  if (*x < *y) {
-    return -1;
-  }
-  return 0;
+  return (*(double *)a > *(double *)b)   ? 1
+         : (*(double *)a < *(double *)b) ? -1
+                                         : 0;
 }
 /*-----------------------------------------------------------------------
 |                          Locate search window
@@ -111,16 +106,18 @@ int locate(values real[], int choise, int pos, int i) {
   qsort(sarray, i, sizeof(int), &cmp);
 
   int result = sarray[pos];
-
-  return sarray[pos];
+  return result;
 }
 /*-----------------------------------------------------------------------
 |					    sort a two d image array
 |
 -----------------------------------------------------------------------*/
 values *sorttod(values real[], int i) {
-  int g, k, l, o, b;
-  o = 0;
+  int g = 0;
+  int k = 0;
+  int l = 0;
+  int o = 0;
+  int b = 0;
 
   int rmin = locate(real, 0, 0, i);
   int cmin = locate(real, 1, 0, i);
@@ -129,7 +126,7 @@ values *sorttod(values real[], int i) {
   int cmax = locate(real, 1, i - 1, i);
 
   printf("pixel bounding box %d %d %d %d\n", rmin, rmax, cmin, cmax);
-  
+
   values *temp;
   temp = malloc((sizeof(double) * i) * 3 + (sizeof(int) * i) * 4);
 
@@ -150,11 +147,11 @@ values *sorttod(values real[], int i) {
 
         o++;
       }
-	}
+    }
   }
 
   free(real);
-
+  real = NULL;
   o = 0;
 
   printf("step 6: sorting columns\n");
@@ -182,13 +179,13 @@ values *sorttod(values real[], int i) {
           sort[o].Px = temp[k + l].Px;
           sort[o].Py = temp[k + l].Py;
           o++;
-        } else {
         }
       }
     }
   }
 
   free(temp);
+  temp = NULL;
   return (sort);
 }
 /*-----------------------------------------------------------------------
@@ -196,9 +193,10 @@ values *sorttod(values real[], int i) {
 |
 -----------------------------------------------------------------------*/
 int threshold(values sort[], int i, info orient) {
-  int g, k, l, n;
-  g = 0;
-  n = 0;
+  int g = 0;
+  int k = 0;
+  int l = 0;
+  int n = 0;
   int t = 0;
   FILE *wstream = fopen("exportx", "w");
 
@@ -235,8 +233,10 @@ int threshold(values sort[], int i, info orient) {
       }
     }
     free(tempz);
+    tempz = NULL;
   }
   free(sort);
+  sort = NULL;
   fclose(wstream);
   return n;
 }
@@ -245,8 +245,7 @@ int threshold(values sort[], int i, info orient) {
 |
 -----------------------------------------------------------------------*/
 values *project(points cloud[], int i, info orient) {
-  int g;
-  FILE *wstream = fopen("coord", "w");
+  int g = 0;
   printf("step 4: projecting points to plane\n");
   values *real;
   real = malloc((sizeof(double) * i) * 3 + (sizeof(int) * i) * 4);
@@ -270,12 +269,7 @@ values *project(points cloud[], int i, info orient) {
     real[g].Px = xa + orient.imagewidth;
     real[g].Py = -ya + orient.imageheight;
     real[g].Pz = 1;
-
-    fprintf(wstream, "%lf %lf %lf %d %d %d\n", cloud[g].Rx, cloud[g].Ry,
-            cloud[g].Rz, cloud[g].IN, real[g].Px, real[g].Py);
   }
-
-  fclose(wstream);
 
   return (real);
 }
@@ -284,6 +278,8 @@ values *project(points cloud[], int i, info orient) {
 |
 -----------------------------------------------------------------------*/
 void saveimage(values project[], info orient) {
+  printf("step 9: exporting\n");
+  
   FILE *istream;
   istream = fopen("image.raw", "wb");
   errorf(istream);
@@ -344,6 +340,7 @@ void saveimage(values project[], info orient) {
           image[i] = project[m + k].IN;
         }
       }
+      free(tempz);
     }
   }
   printf("\n");
@@ -351,6 +348,7 @@ void saveimage(values project[], info orient) {
     fwrite(&image[i], sizeof(unsigned char), 1, istream);
   }
   fclose(istream);
+  free(image);
 }
 /*-----------------------------------------------------------------------
 |                                 MAIN
@@ -385,7 +383,6 @@ int main() {
 
   real = project(cloud, i, orient);
 
-
   values *sort;
   sort = malloc((sizeof(double) * i) * 3 + (sizeof(int) * i) * 4);
   if (sort == NULL) {
@@ -393,10 +390,8 @@ int main() {
   }
 
   sort = sorttod(real, i);
-
   int j = threshold(sort, i, orient);
-  free(cloud);
-
+ 
   FILE *istream;
   istream = fopen("exportx", "r");
   errorf(istream);
@@ -410,12 +405,16 @@ int main() {
   project = loadt(istream, j);
 
   saveimage(project, orient);
+
+  printf("cleaning up memory\n");
+  
+  free(cloud);
+  cloud = NULL;
+  free(sort);
+  sort = NULL;
+  free(project);
+  project = NULL;
   
   printf("finished\n");
-
-  free(project);
-  fclose(ostream);
-  fclose(estream);
-  fclose(istream);
   return 0;
 }

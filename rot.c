@@ -1,5 +1,5 @@
-#include <math.h>
 #include "rot.h"
+#include <math.h>
 
 double r11(double phi, double kapa) { return (cos(phi) * cos(kapa)); }
 double r12(double omega, double phi, double kapa) {

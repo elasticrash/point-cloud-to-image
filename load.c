@@ -1,10 +1,9 @@
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "models.h"
-#include "load.h"
 #include "errors.h"
-
+#include "load.h"
 
 /*-----------------------------------------------------------------------
 |		      	     Load a xyzi file into a stream
@@ -60,7 +59,7 @@ info orientation(FILE *ostream) {
 |
 -----------------------------------------------------------------------*/
 values *loadt(FILE *istream, int i) {
-  printf("step 2: Loading point cloud file\n");
+  printf("step 8: Loading point cloud file\n");
   values *project;
   project = malloc(sizeof(double) * i * 3 + sizeof(int) * 4 * i);
   if (project == NULL) {
@@ -80,5 +79,3 @@ values *loadt(FILE *istream, int i) {
   fclose(istream);
   return (project);
 }
-
-
